@@ -15,44 +15,112 @@ const KEEPZ_BASE_URL = process.env.KEEPZ_ENV === 'prod'
   ? 'https://gateway.keepz.me/ecommerce-service'
   : 'https://gateway.dev.keepz.me/ecommerce-service';
 
+// ── INPUT VALIDATION CONSTANTS (H1) ──
+const ALLOWED_CURRENCIES = new Set(['USD', 'EUR']);
+const ALLOWED_LANGUAGES = new Set(['EN', 'RU', 'HE']);
+const ALLOWED_INTERVALS = new Set(['WEEKLY', 'MONTHLY']);
+const MAX_AMOUNT = 50000;  // Max $50,000 per transaction
+const MAX_DESCRIPTION_LENGTH = 500;
+
+// Plan configurations (server-side only — client cannot override amounts)
+const SUBSCRIPTION_PLANS = Object.freeze({
+  weekly_7:     { interval: 'WEEKLY',  intervalCount: 1, amount: 7 },
+  weekly_14:    { interval: 'WEEKLY',  intervalCount: 1, amount: 14 },
+  monthly_100:  { interval: 'MONTHLY', intervalCount: 1, amount: 100 },
+  monthly_200:  { interval: 'MONTHLY', intervalCount: 1, amount: 200 },
+});
+
+/**
+ * Validate and sanitize common payment inputs
+ */
+function validatePaymentInput({ amount, currency, language, description }) {
+  const errors = [];
+
+  if (amount !== undefined) {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) errors.push('Invalid amount');
+    if (numAmount > MAX_AMOUNT) errors.push(`Amount exceeds maximum ($${MAX_AMOUNT})`);
+  }
+
+  if (currency && !ALLOWED_CURRENCIES.has(currency)) {
+    errors.push('Invalid currency. Allowed: USD, EUR');
+  }
+
+  if (language && !ALLOWED_LANGUAGES.has(language.toUpperCase())) {
+    errors.push('Invalid language. Allowed: EN, RU, HE');
+  }
+
+  if (description && description.length > MAX_DESCRIPTION_LENGTH) {
+    errors.push(`Description too long (max ${MAX_DESCRIPTION_LENGTH} chars)`);
+  }
+
+  return errors;
+}
+
+/**
+ * Sanitize description — strip potential injection characters
+ */
+function sanitizeDescription(desc) {
+  if (!desc) return undefined;
+  return desc
+    .replace(/[<>"'&]/g, '') // Strip HTML/JS special chars
+    .trim()
+    .substring(0, MAX_DESCRIPTION_LENGTH);
+}
+
+/**
+ * Safely map Keepz error to client-facing message (H4)
+ */
+function safeKeepzError(responseData) {
+  // Map known Keepz error codes to user-friendly messages
+  const safeMessages = {
+    400: 'Invalid payment request',
+    401: 'Payment authorization failed',
+    403: 'Payment not permitted',
+    404: 'Payment service unavailable',
+    500: 'Payment service error. Please try again.',
+  };
+  const code = responseData.statusCode || 500;
+  return safeMessages[code] || 'Payment processing error. Please try again.';
+}
+
 /**
  * POST /api/create-order
  * Creates a one-time payment (donation or fixed amount)
- * Body: { amount: number, currency: 'USD' | 'EUR', language: 'EN' | 'RU' | 'HE', description?: string }
  */
 router.post('/create-order', async (req, res) => {
   try {
     const { amount, currency = 'USD', language = 'EN', description } = req.body;
 
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ success: false, error: 'Invalid amount' });
+    // ── VALIDATION (H1) ──
+    const errors = validatePaymentInput({ amount, currency, language, description });
+    if (errors.length > 0) {
+      return res.status(400).json({ success: false, error: errors.join('; ') });
     }
 
+    const sanitizedDesc = sanitizeDescription(description);
     const integratorOrderId = uuidv4();
 
-    // Build order payload
     const orderPayload = {
       amount: parseFloat(amount),
       receiverId: process.env.KEEPZ_RECEIVER_ID,
       receiverType: 'BRANCH',
       integratorId: process.env.KEEPZ_INTEGRATOR_ID,
       integratorOrderId,
-      currency,
-      language: language === 'HE' ? 'EN' : language, // Keepz supports EN, IT, KA - fallback HE to EN
+      currency: currency.toUpperCase(),
+      language: language.toUpperCase() === 'HE' ? 'EN' : language.toUpperCase(),
       directLinkProvider: 'CREDO',
       successRedirectUri: `${process.env.SUCCESS_REDIRECT_URL}?orderId=${integratorOrderId}`,
       failRedirectUri: `${process.env.FAIL_REDIRECT_URL}?orderId=${integratorOrderId}`,
       callbackUri: `${process.env.SITE_URL}/api/keepz-callback`,
     };
 
-    // Add description if provided
-    if (description) {
+    if (sanitizedDesc) {
       orderPayload.orderProperties = {
-        DESCRIPTION: { value: description, isEditable: false },
+        DESCRIPTION: { value: sanitizedDesc, isEditable: false },
       };
     }
 
-    // Encrypt and send to Keepz
     const encrypted = keepz.encrypt(orderPayload);
 
     const response = await fetch(`${KEEPZ_BASE_URL}/api/integrator/order`, {
@@ -68,26 +136,31 @@ router.post('/create-order', async (req, res) => {
 
     const responseData = await response.json();
 
-    // Check for error (errors come unencrypted)
     if (responseData.message) {
-      console.error('Keepz error:', responseData);
+      // ── SAFE ERROR (H4) — don't leak Keepz internals ──
+      console.error(`Keepz error [order ${integratorOrderId}]:`, responseData.statusCode);
       return res.status(400).json({
         success: false,
-        error: responseData.message,
-        statusCode: responseData.statusCode,
+        error: safeKeepzError(responseData),
       });
     }
 
-    // Decrypt success response
     const decrypted = keepz.decrypt(responseData.encryptedData, responseData.encryptedKeys);
+
+    // ── VALIDATE CHECKOUT URL (M4) ──
+    const checkoutUrl = decrypted.urlForQR;
+    if (!checkoutUrl || !checkoutUrl.startsWith('https://')) {
+      console.error(`Invalid checkout URL for order ${integratorOrderId}`);
+      return res.status(500).json({ success: false, error: 'Payment service error' });
+    }
 
     return res.json({
       success: true,
-      checkoutUrl: decrypted.urlForQR,
+      checkoutUrl,
       orderId: integratorOrderId,
     });
   } catch (error) {
-    console.error('Create order error:', error);
+    console.error('Create order error:', error.message);
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -95,45 +168,34 @@ router.post('/create-order', async (req, res) => {
 /**
  * POST /api/create-subscription
  * Creates a subscription (recurring payment)
- * Body: { plan: 'weekly_7' | 'weekly_14' | 'monthly_100' | 'monthly_200' | 'custom', 
- *         currency: 'USD' | 'EUR', language: 'EN' | 'RU' | 'HE',
- *         customAmount?: number, customInterval?: 'WEEKLY' | 'MONTHLY' }
  */
 router.post('/create-subscription', async (req, res) => {
   try {
-    const { plan, currency = 'USD', language = 'EN', customAmount, customInterval } = req.body;
+    const { plan, currency = 'USD', language = 'EN' } = req.body;
 
-    // Plan configurations
-    const plans = {
-      weekly_7: { interval: 'WEEKLY', intervalCount: 1, amount: 7 },
-      weekly_14: { interval: 'WEEKLY', intervalCount: 1, amount: 14 },
-      monthly_100: { interval: 'MONTHLY', intervalCount: 1, amount: 100 },
-      monthly_200: { interval: 'MONTHLY', intervalCount: 1, amount: 200 },
-    };
+    // ── VALIDATION (H1) — only accept known plans ──
+    const errors = validatePaymentInput({ currency, language });
 
-    let planConfig;
-    if (plan === 'custom' && customAmount && customInterval) {
-      planConfig = { interval: customInterval, intervalCount: 1, amount: parseFloat(customAmount) };
-    } else {
-      planConfig = plans[plan];
+    // Validate plan: ONLY accept predefined plans (no custom)
+    const planConfig = SUBSCRIPTION_PLANS[plan];
+    if (!planConfig) {
+      errors.push('Invalid plan. Allowed: weekly_7, weekly_14, monthly_100, monthly_200');
     }
 
-    if (!planConfig) {
-      return res.status(400).json({ success: false, error: 'Invalid plan' });
+    if (errors.length > 0) {
+      return res.status(400).json({ success: false, error: errors.join('; ') });
     }
 
     const integratorOrderId = uuidv4();
 
-    // Build subscription order payload
-    // For subscriptions: amount must be 0, saveCard must be true
     const orderPayload = {
       amount: 0,
       receiverId: process.env.KEEPZ_RECEIVER_ID,
       receiverType: 'BRANCH',
       integratorId: process.env.KEEPZ_INTEGRATOR_ID,
       integratorOrderId,
-      currency,
-      language: language === 'HE' ? 'EN' : language,
+      currency: currency.toUpperCase(),
+      language: language.toUpperCase() === 'HE' ? 'EN' : language.toUpperCase(),
       directLinkProvider: 'CREDO',
       saveCard: true,
       successRedirectUri: `${process.env.SUCCESS_REDIRECT_URL}?orderId=${integratorOrderId}&type=subscription`,
@@ -147,7 +209,6 @@ router.post('/create-subscription', async (req, res) => {
       },
     };
 
-    // Encrypt and send to Keepz
     const encrypted = keepz.encrypt(orderPayload);
 
     const response = await fetch(`${KEEPZ_BASE_URL}/api/integrator/order`, {
@@ -164,23 +225,28 @@ router.post('/create-subscription', async (req, res) => {
     const responseData = await response.json();
 
     if (responseData.message) {
-      console.error('Keepz subscription error:', responseData);
+      console.error(`Keepz error [sub ${integratorOrderId}]:`, responseData.statusCode);
       return res.status(400).json({
         success: false,
-        error: responseData.message,
-        statusCode: responseData.statusCode,
+        error: safeKeepzError(responseData),
       });
     }
 
     const decrypted = keepz.decrypt(responseData.encryptedData, responseData.encryptedKeys);
 
+    const checkoutUrl = decrypted.urlForQR;
+    if (!checkoutUrl || !checkoutUrl.startsWith('https://')) {
+      console.error(`Invalid checkout URL for subscription ${integratorOrderId}`);
+      return res.status(500).json({ success: false, error: 'Payment service error' });
+    }
+
     return res.json({
       success: true,
-      checkoutUrl: decrypted.urlForQR,
+      checkoutUrl,
       orderId: integratorOrderId,
     });
   } catch (error) {
-    console.error('Create subscription error:', error);
+    console.error('Create subscription error:', error.message);
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -188,57 +254,90 @@ router.post('/create-subscription', async (req, res) => {
 /**
  * POST /api/keepz-callback
  * Receives payment result callbacks from Keepz
- * Keepz sends encrypted data about payment success/failure
+ * SECURITY: Verified via RSA decryption — only Keepz can encrypt with our public key
  */
 router.post('/keepz-callback', async (req, res) => {
   try {
-    const { encryptedData, encryptedKeys, aes } = req.body;
+    const { encryptedData, encryptedKeys } = req.body;
 
     if (encryptedData && encryptedKeys) {
       const decrypted = keepz.decrypt(encryptedData, encryptedKeys);
-      console.log('Payment callback received:', JSON.stringify(decrypted, null, 2));
+
+      // ── SAFE LOGGING (M1) — only log non-sensitive fields ──
+      console.log('Payment callback:', {
+        orderId: decrypted.integratorOrderId || 'unknown',
+        status: decrypted.status || 'unknown',
+        amount: decrypted.amount,
+        currency: decrypted.currency,
+        timestamp: new Date().toISOString(),
+      });
 
       // TODO: Save payment result to database
       // TODO: Send email notifications
       // TODO: Update membership status
+    } else {
+      // ── REJECT UNENCRYPTED CALLBACKS (H2) ──
+      console.warn('Rejected unencrypted callback attempt from:', req.ip);
+      return res.status(400).json({ error: 'Invalid callback format' });
     }
 
-    // Must return 200 to confirm receipt
     return res.status(200).json({ received: true });
   } catch (error) {
-    console.error('Callback processing error:', error);
-    return res.status(200).json({ received: true }); // Still return 200 to prevent retries
+    // If decryption fails, the callback wasn't from Keepz
+    console.error('Callback decryption failed (possible spoofing):', error.message);
+    return res.status(403).json({ error: 'Authentication failed' });
   }
 });
 
 /**
  * POST /api/subscription-callback
  * Receives subscription payment cycle callbacks from Keepz
+ * SECURITY: Verify via encrypted payload or log with warning
  */
 router.post('/subscription-callback', async (req, res) => {
   try {
-    const { subscriptionId, historyId, status, amount } = req.body;
-    console.log('Subscription callback:', { subscriptionId, historyId, status, amount });
+    const { encryptedData, encryptedKeys, subscriptionId, historyId, status, amount } = req.body;
 
-    // TODO: Log subscription payment
-    // TODO: Handle FAILED status - notify admin
-    // TODO: Handle COMPLETED status - update records
+    // ── PREFER ENCRYPTED CALLBACKS (H2) ──
+    if (encryptedData && encryptedKeys) {
+      const decrypted = keepz.decrypt(encryptedData, encryptedKeys);
+      console.log('Subscription callback (verified):', {
+        subscriptionId: decrypted.subscriptionId,
+        status: decrypted.status,
+        amount: decrypted.amount,
+        timestamp: new Date().toISOString(),
+      });
+    } else if (subscriptionId && status) {
+      // Keepz may send unencrypted subscription callbacks
+      // Log with caution flag — these should be verified against known subscriptionIds
+      console.warn('Subscription callback (unverified):', {
+        subscriptionId,
+        historyId,
+        status,
+        amount,
+        ip: req.ip,
+        timestamp: new Date().toISOString(),
+      });
+      // TODO: Verify subscriptionId exists in your database before trusting
+    } else {
+      console.warn('Rejected malformed subscription callback from:', req.ip);
+      return res.status(400).json({ error: 'Invalid callback' });
+    }
 
     return res.status(200).json({ received: true });
   } catch (error) {
-    console.error('Subscription callback error:', error);
+    console.error('Subscription callback error:', error.message);
     return res.status(200).json({ received: true });
   }
 });
 
 /**
  * GET /api/health
- * Health check endpoint
+ * Health check endpoint (M3 — minimal info disclosure)
  */
 router.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    environment: process.env.KEEPZ_ENV || 'dev',
     timestamp: new Date().toISOString(),
   });
 });
