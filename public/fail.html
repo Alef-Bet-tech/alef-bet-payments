@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment Failed — ALEF-BET LLC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:linear-gradient(135deg,#0a0e27 0%,#1a1040 50%,#12082a 100%);
+  color:rgba(255,255,255,.95);min-height:100vh;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;
+}
+body[dir="rtl"]{font-family:'Inter','Segoe UI','Arial',system-ui,sans-serif}
+
+body::before{content:'';position:fixed;width:500px;height:500px;background:radial-gradient(circle,rgba(239,68,68,.12),transparent 70%);top:-150px;right:-100px;border-radius:50%;filter:blur(100px);pointer-events:none}
+body::after{content:'';position:fixed;width:400px;height:400px;background:radial-gradient(circle,rgba(139,92,246,.1),transparent 70%);bottom:-100px;left:-80px;border-radius:50%;filter:blur(100px);pointer-events:none}
+
+.card{
+  background:rgba(255,255,255,.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);
+  border-radius:24px;padding:48px 40px;text-align:center;max-width:460px;width:90%;
+  position:relative;z-index:2;animation:cardIn .6s ease;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Animated X mark */
+.x-circle{
+  width:100px;height:100px;border-radius:50%;margin:0 auto 28px;position:relative;
+  background:linear-gradient(135deg,#ef4444,#dc2626);
+  animation:popIn .5s .2s cubic-bezier(.175,.885,.32,1.275) both;
+  box-shadow:0 8px 40px rgba(239,68,68,.3);
+}
+@keyframes popIn{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+.x-circle svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px}
+.x-circle svg line{
+  stroke:#fff;stroke-width:3.5;stroke-linecap:round;
+  stroke-dasharray:30;stroke-dashoffset:30;
+}
+.x-circle svg line:first-child{animation:drawX .4s .6s ease forwards}
+.x-circle svg line:last-child{animation:drawX .4s .8s ease forwards}
+@keyframes drawX{to{stroke-dashoffset:0}}
+
+h1{font-size:1.8rem;font-weight:800;margin-bottom:12px;background:linear-gradient(135deg,#ef4444,#f87171);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{color:rgba(255,255,255,.6);font-size:1rem;margin-bottom:32px;line-height:1.6}
+
+.btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{
+  display:inline-block;padding:14px 28px;border-radius:12px;
+  font-weight:600;font-size:.92rem;text-decoration:none;
+  transition:.3s ease;font-family:inherit;border:none;cursor:pointer;
+}
+.btn-primary{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(245,158,11,.3)}
+.btn-secondary{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.8)}
+.btn-secondary:hover{transform:translateY(-2px);background:rgba(255,255,255,.1)}
+
+/* Subtle shake on the X */
+.x-circle{animation:popIn .5s .2s cubic-bezier(.175,.885,.32,1.275) both, gentleShake .5s 1.2s ease both}
+@keyframes gentleShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="x-circle">
+    <svg viewBox="0 0 40 40">
+      <line x1="12" y1="12" x2="28" y2="28"/>
+      <line x1="28" y1="12" x2="12" y2="28"/>
+    </svg>
+  </div>
+  <h1 id="heading">Payment Failed</h1>
+  <p class="sub" id="subtext">Please try again or contact support</p>
+  <div class="btn-row">
+    <a href="/" class="btn btn-primary" id="btnRetry">Try Again</a>
+    <a href="mailto:support@alef-bet.com" class="btn btn-secondary" id="btnSupport">Contact Support</a>
+  </div>
+</div>
+
+<script>
+const T = {
+  ru: { heading:'Ошибка оплаты', sub:'Пожалуйста, попробуйте ещё раз или свяжитесь с поддержкой', retry:'Попробовать снова', support:'Связаться с поддержкой' },
+  en: { heading:'Payment Failed', sub:'Please try again or contact support', retry:'Try Again', support:'Contact Support' },
+  he: { heading:'התשלום נכשל', sub:'אנא נסו שוב או פנו לתמיכה', retry:'נסו שוב', support:'צרו קשר עם התמיכה' }
+};
+
+const lang = localStorage.getItem('alefbet_lang') || 'ru';
+const t = T[lang] || T.en;
+document.documentElement.lang = lang === 'he' ? 'he' : lang;
+document.body.dir = lang === 'he' ? 'rtl' : 'ltr';
+document.getElementById('heading').textContent = t.heading;
+document.getElementById('subtext').textContent = t.sub;
+document.getElementById('btnRetry').textContent = t.retry;
+document.getElementById('btnSupport').textContent = t.support;
+</script>
+</body>
+</html>

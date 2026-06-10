@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment Successful — ALEF-BET LLC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:linear-gradient(135deg,#0a0e27 0%,#1a1040 50%,#12082a 100%);
+  color:rgba(255,255,255,.95);min-height:100vh;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;
+}
+body[dir="rtl"]{font-family:'Inter','Segoe UI','Arial',system-ui,sans-serif}
+
+/* Ambient orbs */
+body::before{content:'';position:fixed;width:500px;height:500px;background:radial-gradient(circle,rgba(34,197,94,.15),transparent 70%);top:-150px;right:-100px;border-radius:50%;filter:blur(100px);pointer-events:none}
+body::after{content:'';position:fixed;width:400px;height:400px;background:radial-gradient(circle,rgba(139,92,246,.12),transparent 70%);bottom:-100px;left:-80px;border-radius:50%;filter:blur(100px);pointer-events:none}
+
+.card{
+  background:rgba(255,255,255,.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);
+  border-radius:24px;padding:48px 40px;text-align:center;max-width:460px;width:90%;
+  position:relative;z-index:2;animation:cardIn .6s ease;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Animated checkmark */
+.check-circle{
+  width:100px;height:100px;border-radius:50%;margin:0 auto 28px;position:relative;
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  animation:popIn .5s .2s cubic-bezier(.175,.885,.32,1.275) both;
+  box-shadow:0 8px 40px rgba(34,197,94,.3);
+}
+@keyframes popIn{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+.check-circle svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:50px}
+.check-circle svg path{
+  fill:none;stroke:#fff;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:34;stroke-dashoffset:34;
+  animation:drawCheck .5s .6s ease forwards;
+}
+@keyframes drawCheck{to{stroke-dashoffset:0}}
+
+h1{font-size:1.8rem;font-weight:800;margin-bottom:12px;background:linear-gradient(135deg,#22c55e,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{color:rgba(255,255,255,.6);font-size:1rem;margin-bottom:8px;line-height:1.6}
+.order-id{color:rgba(255,255,255,.3);font-size:.82rem;margin-bottom:28px;word-break:break-all}
+
+.btn-return{
+  display:inline-block;padding:14px 36px;border-radius:12px;
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  color:#fff;font-weight:600;font-size:.95rem;text-decoration:none;
+  transition:.3s ease;font-family:inherit;border:none;cursor:pointer;
+}
+.btn-return:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(34,197,94,.3)}
+
+/* Confetti */
+.confetti-container{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:hidden}
+.confetti{
+  position:absolute;width:10px;height:10px;top:-20px;border-radius:2px;
+  animation:fall linear forwards;
+}
+@keyframes fall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1}
+  100%{transform:translateY(100vh) rotate(720deg);opacity:0}
+}
+</style>
+</head>
+<body>
+
+<div class="confetti-container" id="confettiContainer"></div>
+
+<div class="card">
+  <div class="check-circle">
+    <svg viewBox="0 0 40 40"><path d="M10 20 L17 27 L30 13"/></svg>
+  </div>
+  <h1 id="heading">Payment Successful!</h1>
+  <p class="sub" id="subtext">Thank you for your support</p>
+  <p class="order-id" id="orderId"></p>
+  <a href="/" class="btn-return" id="btnReturn">Return</a>
+</div>
+
+<script>
+const T = {
+  ru: { heading:'Платёж успешен!', sub:'Спасибо за вашу поддержку', btn:'Вернуться на сайт' },
+  en: { heading:'Payment Successful!', sub:'Thank you for your support', btn:'Return to site' },
+  he: { heading:'התשלום בוצע בהצלחה!', sub:'תודה על התמיכה שלכם', btn:'חזרה לאתר' }
+};
+
+const lang = localStorage.getItem('alefbet_lang') || 'ru';
+const t = T[lang] || T.en;
+document.documentElement.lang = lang === 'he' ? 'he' : lang;
+document.body.dir = lang === 'he' ? 'rtl' : 'ltr';
+document.getElementById('heading').textContent = t.heading;
+document.getElementById('subtext').textContent = t.sub;
+document.getElementById('btnReturn').textContent = t.btn;
+
+const params = new URLSearchParams(window.location.search);
+const orderId = params.get('orderId') || params.get('order_id');
+if (orderId) {
+  document.getElementById('orderId').textContent = 'Order: ' + orderId;
+}
+
+/* Confetti */
+(function createConfetti() {
+  const container = document.getElementById('confettiContainer');
+  const colors = ['#22c55e','#f59e0b','#8b5cf6','#ef4444','#3b82f6','#ec4899','#14b8a6'];
+  for (let i = 0; i < 60; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + '%';
+    c.style.width = (Math.random() * 8 + 5) + 'px';
+    c.style.height = (Math.random() * 8 + 5) + 'px';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDuration = (Math.random() * 2 + 2) + 's';
+    c.style.animationDelay = (Math.random() * 2) + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    container.appendChild(c);
+  }
+  setTimeout(() => container.style.display = 'none', 5000);
+})();
+</script>
+</body>
+</html>

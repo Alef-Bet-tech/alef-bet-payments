@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ru" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALEF-BET LLC — Payment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-from:#0a0e27;--bg-to:#1a1040;
+  --glass-bg:rgba(255,255,255,0.05);--glass-border:rgba(255,255,255,0.08);--glass-blur:20px;
+  --accent-from:#f59e0b;--accent-to:#d97706;
+  --text-primary:rgba(255,255,255,0.95);--text-secondary:rgba(255,255,255,0.6);--text-muted:rgba(255,255,255,0.35);
+  --radius:16px;--radius-sm:10px;
+  --transition:0.3s cubic-bezier(.4,0,.2,1);
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:linear-gradient(135deg,var(--bg-from) 0%,var(--bg-to) 50%,#12082a 100%);
+  color:var(--text-primary);min-height:100vh;
+  overflow-x:hidden;position:relative;
+}
+body[dir="rtl"]{font-family:'Inter','Segoe UI','Arial',system-ui,sans-serif}
+
+/* Ambient background orbs */
+body::before,body::after{
+  content:'';position:fixed;border-radius:50%;pointer-events:none;filter:blur(120px);opacity:.18;z-index:0;
+}
+body::before{width:600px;height:600px;background:radial-gradient(circle,#f59e0b,transparent 70%);top:-200px;right:-100px;animation:floatOrb 20s ease-in-out infinite}
+body::after{width:500px;height:500px;background:radial-gradient(circle,#8b5cf6,transparent 70%);bottom:-150px;left:-100px;animation:floatOrb 25s ease-in-out infinite reverse}
+@keyframes floatOrb{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,30px)}}
+
+.container{max-width:960px;margin:0 auto;padding:20px 16px;position:relative;z-index:1}
+
+/* ── HEADER ── */
+.header{display:flex;align-items:center;justify-content:space-between;padding:16px 0;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.logo{font-size:1.6rem;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,var(--accent-from),var(--accent-to));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none}
+.lang-switcher{display:flex;gap:4px;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:40px;padding:4px}
+.lang-btn{
+  background:none;border:none;color:var(--text-secondary);padding:8px 14px;border-radius:36px;
+  font-size:.85rem;font-weight:500;cursor:pointer;transition:var(--transition);font-family:inherit;
+}
+.lang-btn.active{background:linear-gradient(135deg,var(--accent-from),var(--accent-to));color:#000;font-weight:600}
+.lang-btn:hover:not(.active){color:var(--text-primary);background:rgba(255,255,255,0.07)}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:32px 0 36px}
+.hero h1{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:800;margin-bottom:12px;line-height:1.15;background:linear-gradient(135deg,#fff 30%,rgba(255,255,255,.7));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:clamp(.95rem,2.5vw,1.15rem);color:var(--text-secondary);max-width:540px;margin:0 auto;line-height:1.6}
+
+/* ── TABS ── */
+.tabs{display:flex;justify-content:center;gap:6px;margin-bottom:32px;flex-wrap:wrap}
+.tab-btn{
+  display:flex;align-items:center;gap:8px;
+  background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);
+  color:var(--text-secondary);padding:12px 22px;border-radius:40px;
+  font-size:.92rem;font-weight:500;cursor:pointer;transition:var(--transition);font-family:inherit;
+}
+.tab-btn.active{
+  background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(217,119,6,.1));
+  border-color:rgba(245,158,11,.35);color:var(--accent-from);
+}
+.tab-btn:hover:not(.active){border-color:rgba(255,255,255,.15);color:var(--text-primary)}
+.tab-btn .tab-icon{font-size:1.15rem}
+
+/* ── TAB PANELS ── */
+.tab-panels{position:relative}
+.tab-panel{display:none;animation:fadeUp .4s ease}
+.tab-panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CURRENCY TOGGLE ── */
+.currency-row{display:flex;justify-content:center;margin-bottom:28px}
+.currency-toggle{display:flex;background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:40px;padding:4px;gap:4px}
+.cur-btn{
+  background:none;border:none;color:var(--text-secondary);padding:8px 20px;border-radius:36px;
+  font-size:.85rem;font-weight:600;cursor:pointer;transition:var(--transition);font-family:inherit;
+}
+.cur-btn.active{background:linear-gradient(135deg,var(--accent-from),var(--accent-to));color:#000}
+.cur-btn:hover:not(.active){color:var(--text-primary)}
+
+/* ── PLAN CARDS GRID ── */
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-bottom:16px}
+.plan-card{
+  background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);
+  border-radius:var(--radius);padding:28px 22px;text-align:center;
+  transition:var(--transition);position:relative;overflow:hidden;
+}
+.plan-card::before{
+  content:'';position:absolute;inset:0;border-radius:var(--radius);opacity:0;
+  background:radial-gradient(circle at 50% 0%,rgba(245,158,11,.12),transparent 70%);
+  transition:opacity .4s ease;pointer-events:none;
+}
+.plan-card:hover{transform:translateY(-4px);border-color:rgba(245,158,11,.25);box-shadow:0 8px 40px rgba(245,158,11,.08)}
+.plan-card:hover::before{opacity:1}
+.plan-name{font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent-from);margin-bottom:14px}
+.plan-price{font-size:2rem;font-weight:800;margin-bottom:4px}
+.plan-price .cur-symbol{font-size:1.2rem;font-weight:600;vertical-align:super;margin-right:2px}
+.plan-period{font-size:.82rem;color:var(--text-muted);margin-bottom:6px}
+.plan-approx{font-size:.78rem;color:var(--text-secondary);margin-bottom:16px;min-height:18px}
+.plan-desc{font-size:.85rem;color:var(--text-secondary);margin-bottom:22px;line-height:1.5}
+.plan-btn{
+  width:100%;padding:12px;border:none;border-radius:var(--radius-sm);
+  background:linear-gradient(135deg,var(--accent-from),var(--accent-to));
+  color:#000;font-weight:600;font-size:.9rem;cursor:pointer;
+  transition:var(--transition);font-family:inherit;position:relative;overflow:hidden;
+}
+.plan-btn:hover{transform:scale(1.03);box-shadow:0 4px 20px rgba(245,158,11,.3)}
+.plan-btn:active{transform:scale(.98)}
+.plan-btn.loading{pointer-events:none;opacity:.8}
+.plan-btn .spinner{display:none;width:18px;height:18px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto}
+.plan-btn.loading .btn-text{display:none}
+.plan-btn.loading .spinner{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── DONATION TAB ── */
+.donation-section{max-width:520px;margin:0 auto}
+.section-label{font-size:.85rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px;text-align:center}
+.quick-amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
+.quick-btn{
+  background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);
+  color:var(--text-primary);padding:14px;border-radius:var(--radius-sm);
+  font-size:1.05rem;font-weight:600;cursor:pointer;transition:var(--transition);font-family:inherit;
+}
+.quick-btn:hover{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.08);color:var(--accent-from)}
+.quick-btn.selected{border-color:var(--accent-from);background:rgba(245,158,11,.12);color:var(--accent-from);box-shadow:0 0 20px rgba(245,158,11,.1)}
+.divider-text{text-align:center;color:var(--text-muted);font-size:.82rem;margin-bottom:16px}
+.input-group{margin-bottom:16px}
+.input-field{
+  width:100%;padding:14px 18px;border-radius:var(--radius-sm);
+  background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);
+  color:var(--text-primary);font-size:1rem;font-family:inherit;
+  transition:var(--transition);outline:none;
+}
+.input-field::placeholder{color:var(--text-muted)}
+.input-field:focus{border-color:rgba(245,158,11,.4);background:rgba(255,255,255,0.06);box-shadow:0 0 0 3px rgba(245,158,11,.08)}
+textarea.input-field{resize:vertical;min-height:70px}
+.donate-btn{
+  width:100%;padding:16px;border:none;border-radius:var(--radius-sm);
+  background:linear-gradient(135deg,var(--accent-from),var(--accent-to));
+  background-size:200% 200%;animation:gradientShift 3s ease infinite;
+  color:#000;font-weight:700;font-size:1.05rem;cursor:pointer;
+  transition:var(--transition);font-family:inherit;position:relative;overflow:hidden;margin-top:8px;
+}
+@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.donate-btn:hover{transform:scale(1.02);box-shadow:0 6px 30px rgba(245,158,11,.3)}
+.donate-btn:active{transform:scale(.98)}
+.donate-btn.loading{pointer-events:none;opacity:.8}
+.donate-btn .spinner{display:none;width:20px;height:20px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto}
+.donate-btn.loading .btn-text{display:none}
+.donate-btn.loading .spinner{display:inline-block}
+
+/* ── AUTO-PAYMENTS TAB ── */
+.auto-header{text-align:center;margin-bottom:28px}
+.auto-header .auto-icon{font-size:2.2rem;margin-bottom:8px}
+.auto-header p{color:var(--text-secondary);font-size:.92rem}
+.auto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px}
+.auto-card{
+  background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);
+  border-radius:var(--radius);padding:24px 20px;text-align:center;transition:var(--transition);position:relative;overflow:hidden;
+}
+.auto-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent-from),var(--accent-to));
+  transform:scaleX(0);transition:transform .4s ease;
+}
+.auto-card:hover::before{transform:scaleX(1)}
+.auto-card:hover{transform:translateY(-3px);border-color:rgba(245,158,11,.2)}
+.auto-card .freq-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(245,158,11,.1);color:var(--accent-from);
+  padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:600;
+  margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px;
+}
+.auto-card .auto-price{font-size:1.7rem;font-weight:800;margin-bottom:4px}
+.auto-card .auto-period{font-size:.82rem;color:var(--text-muted);margin-bottom:14px}
+.auto-card .auto-desc{font-size:.83rem;color:var(--text-secondary);margin-bottom:18px;line-height:1.5}
+
+/* ── FOOTER ── */
+.security-footer{
+  text-align:center;padding:32px 0 20px;margin-top:40px;
+  border-top:1px solid rgba(255,255,255,0.05);
+}
+.security-footer .lock-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;color:var(--text-muted);font-size:.85rem}
+.security-footer .lock-icon{font-size:1.1rem}
+.badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.badge{
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+  padding:6px 14px;border-radius:6px;font-size:.75rem;font-weight:600;color:var(--text-muted);letter-spacing:1px;
+}
+
+/* ── TOAST ── */
+.toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:90%;max-width:420px}
+.toast{
+  pointer-events:auto;
+  background:rgba(30,15,50,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);
+  padding:14px 20px;border-radius:var(--radius-sm);
+  color:var(--text-primary);font-size:.9rem;
+  animation:toastIn .35s ease;position:relative;overflow:hidden;
+}
+.toast.error{border-left:3px solid #ef4444}
+.toast.success{border-left:3px solid #22c55e}
+.toast.removing{animation:toastOut .3s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-16px)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .container{padding:14px 12px}
+  .header{justify-content:center;text-align:center}
+  .plans-grid,.auto-grid{grid-template-columns:1fr 1fr}
+  .quick-amounts{grid-template-columns:repeat(3,1fr)}
+  .tabs{gap:4px}
+  .tab-btn{padding:10px 14px;font-size:.82rem}
+  .plan-price{font-size:1.6rem}
+}
+@media(max-width:420px){
+  .plans-grid,.auto-grid{grid-template-columns:1fr}
+  .quick-amounts{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header class="header">
+    <a href="/" class="logo">ALEF-BET LLC</a>
+    <div class="lang-switcher">
+      <button class="lang-btn active" onclick="setLang('ru')">RU</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('he')">עב</button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1 data-i18n="subtitle"></h1>
+    <p data-i18n="description"></p>
+  </section>
+
+  <!-- TABS -->
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="membership" onclick="switchTab('membership')">
+      <span class="tab-icon">💳</span><span data-i18n="tabMembership"></span>
+    </button>
+    <button class="tab-btn" data-tab="donation" onclick="switchTab('donation')">
+      <span class="tab-icon">🎁</span><span data-i18n="tabDonation"></span>
+    </button>
+    <button class="tab-btn" data-tab="auto" onclick="switchTab('auto')">
+      <span class="tab-icon">📅</span><span data-i18n="tabAuto"></span>
+    </button>
+  </nav>
+
+  <!-- ========== MEMBERSHIP ========== -->
+  <div class="tab-panels">
+    <div class="tab-panel active" id="panel-membership">
+      <div class="currency-row">
+        <div class="currency-toggle">
+          <button class="cur-btn active" onclick="setCurrency('USD')">USD</button>
+          <button class="cur-btn" onclick="setCurrency('EUR')">EUR</button>
+        </div>
+      </div>
+      <div class="plans-grid">
+        <!-- $7/week -->
+        <div class="plan-card">
+          <div class="plan-name" data-i18n="planBasic"></div>
+          <div class="plan-price"><span class="cur-symbol" data-currency-symbol>$</span>7</div>
+          <div class="plan-period" data-i18n="weekly"></div>
+          <div class="plan-approx" data-i18n="approxDaily"></div>
+          <div class="plan-desc" data-i18n="planBasicDesc"></div>
+          <button class="plan-btn" onclick="handleSubscription(this,'weekly_7')"><span class="btn-text" data-i18n="subscribe"></span><span class="spinner"></span></button>
+        </div>
+        <!-- $14/week -->
+        <div class="plan-card">
+          <div class="plan-name" data-i18n="planStandard"></div>
+          <div class="plan-price"><span class="cur-symbol" data-currency-symbol>$</span>14</div>
+          <div class="plan-period" data-i18n="weekly"></div>
+          <div class="plan-approx" data-i18n="approxDaily2"></div>
+          <div class="plan-desc" data-i18n="planStandardDesc"></div>
+          <button class="plan-btn" onclick="handleSubscription(this,'weekly_14')"><span class="btn-text" data-i18n="subscribe"></span><span class="spinner"></span></button>
+        </div>
+        <!-- $100/month -->
+        <div class="plan-card">
+          <div class="plan-name" data-i18n="planPremium"></div>
+          <div class="plan-price"><span class="cur-symbol" data-currency-symbol>$</span>100</div>
+          <div class="plan-period" data-i18n="monthly"></div>
+          <div class="plan-approx">&nbsp;</div>
+          <div class="plan-desc" data-i18n="planPremiumDesc"></div>
+          <button class="plan-btn" onclick="handleSubscription(this,'monthly_100')"><span class="btn-text" data-i18n="subscribe"></span><span class="spinner"></span></button>
+        </div>
+        <!-- $200/month -->
+        <div class="plan-card">
+          <div class="plan-name" data-i18n="planElite"></div>
+          <div class="plan-price"><span class="cur-symbol" data-currency-symbol>$</span>200</div>
+          <div class="plan-period" data-i18n="monthly"></div>
+          <div class="plan-approx">&nbsp;</div>
+          <div class="plan-desc" data-i18n="planEliteDesc"></div>
+          <button class="plan-btn" onclick="handleSubscription(this,'monthly_200')"><span class="btn-text" data-i18n="subscribe"></span><span class="spinner"></span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== DONATION ========== -->
+    <div class="tab-panel" id="panel-donation">
+      <div class="currency-row">
+        <div class="currency-toggle">
+          <button class="cur-btn active" onclick="setCurrency('USD')">USD</button>
+          <button class="cur-btn" onclick="setCurrency('EUR')">EUR</button>
+        </div>
+      </div>
+      <div class="donation-section">
+        <div class="section-label" data-i18n="quickAmounts"></div>
+        <div class="quick-amounts">
+          <button class="quick-btn" onclick="selectQuickAmount(this,5)"><span data-currency-symbol>$</span>5</button>
+          <button class="quick-btn" onclick="selectQuickAmount(this,10)"><span data-currency-symbol>$</span>10</button>
+          <button class="quick-btn" onclick="selectQuickAmount(this,25)"><span data-currency-symbol>$</span>25</button>
+          <button class="quick-btn" onclick="selectQuickAmount(this,50)"><span data-currency-symbol>$</span>50</button>
+          <button class="quick-btn" onclick="selectQuickAmount(this,100)"><span data-currency-symbol>$</span>100</button>
+          <button class="quick-btn" onclick="selectQuickAmount(this,250)"><span data-currency-symbol>$</span>250</button>
+        </div>
+        <div class="divider-text" data-i18n="orEnterCustom"></div>
+        <div class="input-group">
+          <input type="number" class="input-field" id="customAmount" min="1" step="any" data-i18n-placeholder="enterAmount" oninput="clearQuickSelection()">
+        </div>
+        <div class="input-group">
+          <textarea class="input-field" id="donationMessage" rows="2" data-i18n-placeholder="message"></textarea>
+        </div>
+        <button class="donate-btn" id="donateBtn" onclick="handleDonation(this)"><span class="btn-text" data-i18n="donate"></span><span class="spinner"></span></button>
+      </div>
+    </div>
+
+    <!-- ========== AUTO-PAYMENTS ========== -->
+    <div class="tab-panel" id="panel-auto">
+      <div class="auto-header">
+        <div class="auto-icon">🔄</div>
+        <p data-i18n="recurringNote"></p>
+      </div>
+      <div class="currency-row">
+        <div class="currency-toggle">
+          <button class="cur-btn active" onclick="setCurrency('USD')">USD</button>
+          <button class="cur-btn" onclick="setCurrency('EUR')">EUR</button>
+        </div>
+      </div>
+      <div class="auto-grid">
+        <!-- $7/week -->
+        <div class="auto-card">
+          <div class="freq-badge">📅 <span data-i18n="weekly"></span></div>
+          <div class="auto-price"><span data-currency-symbol>$</span>7</div>
+          <div class="auto-period" data-i18n="approxDaily"></div>
+          <div class="auto-desc" data-i18n="planBasicDesc"></div>
+          <button class="plan-btn" onclick="handleSubscription(this,'weekly_7')"><span class="btn-text" data-i18n="subscribe"></span><span class="spinner"></span></button>
+        </div>
+        <!-- $14/week -->
+        <div class="auto-card">
+          <div class="freq-badge">📅 <span data-i18n="weekly"></span></div>
+          <div class="auto-price"><span data-currency-symbol>$</span>14</div>
+          <div class="auto-period" data-i18n="approxDaily2"></div>
+          <div class="auto-desc" data-i18n="planStandardDesc"></div>
+          <button class="plan-btn" onclick="handleSubscription(this,'weekly_14')"><span class="btn-text" data-i18n="subscribe"></span><span class="spinner"></span></button>
+        </div>
+        <!-- $100/month -->
+        <div class="auto-card">
+          <div class="freq-badge">📅 <span data-i18n="monthly"></span></div>
+          <div class="auto-price"><span data-currency-symbol>$</span>100</div>
+          <div class="auto-period">&nbsp;</div>
+          <div class="auto-desc" data-i18n="planPremiumDesc"></div>
+          <button class="plan-btn" onclick="handleSubscription(this,'monthly_100')"><span class="btn-text" data-i18n="subscribe"></span><span class="spinner"></span></button>
+        </div>
+        <!-- $200/month -->
+        <div class="auto-card">
+          <div class="freq-badge">📅 <span data-i18n="monthly"></span></div>
+          <div class="auto-price"><span data-currency-symbol>$</span>200</div>
+          <div class="auto-period">&nbsp;</div>
+          <div class="auto-desc" data-i18n="planEliteDesc"></div>
+          <button class="plan-btn" onclick="handleSubscription(this,'monthly_200')"><span class="btn-text" data-i18n="subscribe"></span><span class="spinner"></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECURITY FOOTER -->
+  <footer class="security-footer">
+    <div class="lock-row">
+      <span class="lock-icon">🔒</span>
+      <span data-i18n="securePayment"></span>
+    </div>
+    <div class="badges">
+      <span class="badge">VISA</span>
+      <span class="badge">MASTERCARD</span>
+      <span class="badge">AMEX</span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+/* ── TRANSLATIONS ── */
+const T = {
+  ru: {
+    title:"ALEF-BET LLC",
+    subtitle:"Поддержите наше сообщество",
+    description:"Ваш вклад помогает нам развиваться и поддерживать членов сообщества",
+    tabMembership:"Членство",
+    tabDonation:"Пожертвование",
+    tabAuto:"Автоплатежи",
+    weekly:"в неделю",
+    monthly:"в месяц",
+    approxDaily:"≈ $1 в день",
+    approxDaily2:"≈ $2 в день",
+    subscribe:"Подписаться",
+    donate:"Пожертвовать",
+    customAmount:"Другая сумма",
+    enterAmount:"Введите сумму",
+    message:"Сообщение (необязательно)",
+    securePayment:"Безопасный платёж через Keepz и банк CREDO",
+    processing:"Обработка...",
+    errorInvalidAmount:"Введите корректную сумму",
+    planBasic:"Базовый",
+    planStandard:"Стандарт",
+    planPremium:"Премиум",
+    planElite:"Элитный",
+    planBasicDesc:"Еженедельная поддержка сообщества",
+    planStandardDesc:"Расширенная еженедельная поддержка",
+    planPremiumDesc:"Ежемесячная поддержка проектов",
+    planEliteDesc:"Максимальная ежемесячная поддержка",
+    quickAmounts:"Быстрый выбор суммы",
+    orEnterCustom:"или введите свою сумму",
+    recurringNote:"Автоматическое списание с вашей карты"
+  },
+  en: {
+    title:"ALEF-BET LLC",
+    subtitle:"Support Our Community",
+    description:"Your contribution helps us grow and support community members",
+    tabMembership:"Membership",
+    tabDonation:"Donation",
+    tabAuto:"Auto-payments",
+    weekly:"per week",
+    monthly:"per month",
+    approxDaily:"≈ $1 per day",
+    approxDaily2:"≈ $2 per day",
+    subscribe:"Subscribe",
+    donate:"Donate",
+    customAmount:"Custom amount",
+    enterAmount:"Enter amount",
+    message:"Message (optional)",
+    securePayment:"Secure payment via Keepz & CREDO Bank",
+    processing:"Processing...",
+    errorInvalidAmount:"Please enter a valid amount",
+    planBasic:"Basic",
+    planStandard:"Standard",
+    planPremium:"Premium",
+    planElite:"Elite",
+    planBasicDesc:"Weekly community support",
+    planStandardDesc:"Extended weekly support",
+    planPremiumDesc:"Monthly project support",
+    planEliteDesc:"Maximum monthly support",
+    quickAmounts:"Quick amount selection",
+    orEnterCustom:"or enter your own amount",
+    recurringNote:"Automatic charge from your card"
+  },
+  he: {
+    title:"ALEF-BET LLC",
+    subtitle:"תמכו בקהילה שלנו",
+    description:"התרומה שלכם עוזרת לנו לצמוח ולתמוך בחברי הקהילה",
+    tabMembership:"חברות",
+    tabDonation:"תרומה",
+    tabAuto:"תשלומים אוטומטיים",
+    weekly:"לשבוע",
+    monthly:"לחודש",
+    approxDaily:"≈ $1 ליום",
+    approxDaily2:"≈ $2 ליום",
+    subscribe:"הירשם",
+    donate:"תרום",
+    customAmount:"סכום אחר",
+    enterAmount:"הזן סכום",
+    message:"הודעה (אופציונלי)",
+    securePayment:"תשלום מאובטח דרך Keepz ובנק CREDO",
+    processing:"מעבד...",
+    errorInvalidAmount:"אנא הזן סכום תקין",
+    planBasic:"בסיסי",
+    planStandard:"סטנדרט",
+    planPremium:"פרימיום",
+    planElite:"עילית",
+    planBasicDesc:"תמיכה שבועית בקהילה",
+    planStandardDesc:"תמיכה שבועית מורחבת",
+    planPremiumDesc:"תמיכה חודשית בפרויקטים",
+    planEliteDesc:"תמיכה חודשית מקסימלית",
+    quickAmounts:"בחירת סכום מהירה",
+    orEnterCustom:"או הזינו סכום משלכם",
+    recurringNote:"חיוב אוטומטי מהכרטיס שלכם"
+  }
+};
+
+/* ── STATE ── */
+let currentLang = localStorage.getItem('alefbet_lang') || 'ru';
+let currentCurrency = 'USD';
+let selectedDonationAmount = null;
+
+/* ── LANGUAGE ── */
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('alefbet_lang', lang);
+  document.documentElement.lang = lang === 'he' ? 'he' : lang;
+  document.body.dir = lang === 'he' ? 'rtl' : 'ltr';
+  applyTranslations();
+  // Update active lang button
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+}
+
+function applyTranslations() {
+  const t = T[currentLang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (t[key] !== undefined) el.placeholder = t[key];
+  });
+  document.title = t.title + ' — Payment';
+}
+
+/* ── CURRENCY ── */
+function setCurrency(cur) {
+  currentCurrency = cur;
+  const sym = cur === 'EUR' ? '€' : '$';
+  document.querySelectorAll('[data-currency-symbol]').forEach(el => el.textContent = sym);
+  document.querySelectorAll('.cur-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === cur);
+  });
+}
+
+/* ── TABS ── */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.remove('active');
+    if (p.id === 'panel-' + tab) p.classList.add('active');
+  });
+}
+
+/* ── QUICK AMOUNTS ── */
+function selectQuickAmount(btn, amount) {
+  document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedDonationAmount = amount;
+  document.getElementById('customAmount').value = '';
+}
+
+function clearQuickSelection() {
+  document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('selected'));
+  selectedDonationAmount = null;
+}
+
+/* ── TOAST ── */
+function showToast(message, type = 'error') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('removing');
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+}
+
+/* ── API CALLS ── */
+async function handleSubscription(btn, plan) {
+  btn.classList.add('loading');
+  try {
+    const res = await fetch('/api/create-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan, currency: currentCurrency, language: currentLang })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    if (data.checkoutUrl) {
+      window.location.href = data.checkoutUrl;
+    } else {
+      throw new Error('No checkout URL received');
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+async function handleDonation(btn) {
+  const customVal = document.getElementById('customAmount').value;
+  const amount = selectedDonationAmount || parseFloat(customVal);
+  if (!amount || amount <= 0) {
+    showToast(T[currentLang].errorInvalidAmount, 'error');
+    return;
+  }
+  const message = document.getElementById('donationMessage').value || '';
+  const description = `Donation ${currentCurrency === 'EUR' ? '€' : '$'}${amount}` + (message ? ` — ${message}` : '');
+
+  btn.classList.add('loading');
+  try {
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, currency: currentCurrency, language: currentLang, description })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    if (data.checkoutUrl) {
+      window.location.href = data.checkoutUrl;
+    } else {
+      throw new Error('No checkout URL received');
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+/* ── INIT ── */
+setLang(currentLang);
+</script>
+</body>
+</html>
