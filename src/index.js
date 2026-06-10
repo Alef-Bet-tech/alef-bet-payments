@@ -17,14 +17,19 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+      scriptSrcAttr: ["'unsafe-inline'"], // Allow onclick= handlers
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:"],
       connectSrc: ["'self'"],
       frameAncestors: ["'self'", "https://*.tilda.ws", "https://*.tildacdn.com", "https://alef-bet.tech"],
+      formAction: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
     },
   },
-  crossOriginEmbedderPolicy: false, // Allow embedding in Tilda iframe
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
 // ── CORS RESTRICTION (C1) ──
